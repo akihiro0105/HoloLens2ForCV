@@ -142,6 +142,11 @@ void SensorVisualizationScenario::IntializeSensors()
         {
             winrt::check_hresult(m_pSensorDevice->GetSensor(sensorDescriptor.sensorType, &m_pAccelSensor));
         }
+
+        if (sensorDescriptor.sensorType==IMU_MAG)
+        {
+            winrt::check_hresult(m_pSensorDevice->GetSensor(sensorDescriptor.sensorType, &m_pMagSensor));
+        }
     }
 }
 
@@ -263,6 +268,11 @@ void SensorVisualizationScenario::IntializeModelRendering()
     if (m_pAccelSensor)
     {
         m_AccelRenderer = std::make_shared<AccelRenderer>(m_deviceResources, m_pAccelSensor, imuConsentGiven, &imuAccessCheck);
+    }
+
+    if (m_pMagSensor) 
+    {
+        m_MagRenderer = std::make_shared<MagRender>(m_deviceResources, m_pMagSensor, imuConsentGiven, &imuAccessCheck);
     }
 }
 

@@ -66,6 +66,9 @@
     <ClCompile Include="Content\VectorModel.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="Content\MagRender.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -104,6 +107,9 @@
     </ClInclude>
     <ClInclude Include="SensorVisualizationScenario.h" />
     <ClInclude Include="Content\VectorModel.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\MagRender.h">
       <Filter>Content</Filter>
     </ClInclude>
   </ItemGroup>

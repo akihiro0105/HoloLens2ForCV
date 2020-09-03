@@ -213,6 +213,7 @@
     <ClInclude Include="Common\CameraResources.h" />
     <ClInclude Include="Common\StepTimer.h" />
     <ClInclude Include="Content\AccelRenderer.h" />
+    <ClInclude Include="Content\MagRender.h" />
     <ClInclude Include="Content\VectorModel.h" />
     <ClInclude Include="Content\XAxisModel.h" />
     <ClInclude Include="Content\SlateCameraRenderer.h" />
@@ -233,6 +234,7 @@
     <ClCompile Include="Common\DeviceResources.cpp" />
     <ClCompile Include="Common\CameraResources.cpp" />
     <ClCompile Include="Content\AccelRenderer.cpp" />
+    <ClCompile Include="Content\MagRender.cpp" />
     <ClCompile Include="Content\VectorModel.cpp" />
     <ClCompile Include="Content\XAxisModel.cpp" />
     <ClCompile Include="Content\SlateCameraRenderer.cpp" />
