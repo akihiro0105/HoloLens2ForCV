@@ -125,7 +125,7 @@ void SensorVisualizationScenario::IntializeSensors()
         }
 
 // Long throw and AHAT modes can not be used at the same time.
-#define DEPTH_USE_LONG_THROW
+//#define DEPTH_USE_LONG_THROW
 
 #ifdef DEPTH_USE_LONG_THROW
         if (sensorDescriptor.sensorType == DEPTH_LONG_THROW)
@@ -141,6 +141,11 @@ void SensorVisualizationScenario::IntializeSensors()
         if (sensorDescriptor.sensorType == IMU_ACCEL)
         {
             winrt::check_hresult(m_pSensorDevice->GetSensor(sensorDescriptor.sensorType, &m_pAccelSensor));
+        }
+
+        if (sensorDescriptor.sensorType == IMU_GYRO)
+        {
+            winrt::check_hresult(m_pSensorDevice->GetSensor(sensorDescriptor.sensorType, &m_pGyroSensor));
         }
 
         if (sensorDescriptor.sensorType==IMU_MAG)
@@ -270,6 +275,11 @@ void SensorVisualizationScenario::IntializeModelRendering()
         m_AccelRenderer = std::make_shared<AccelRenderer>(m_deviceResources, m_pAccelSensor, imuConsentGiven, &imuAccessCheck);
     }
 
+    if (m_pGyroSensor)
+    {
+        m_GyroRenderer = std::make_shared<GyroRenderer>(m_deviceResources, m_pGyroSensor, imuConsentGiven, &imuAccessCheck);
+    }
+
     if (m_pMagSensor) 
     {
         m_MagRenderer = std::make_shared<MagRender>(m_deviceResources, m_pMagSensor, imuConsentGiven, &imuAccessCheck);
@@ -302,6 +312,9 @@ void SensorVisualizationScenario::UpdateModels(DX::StepTimer &timer)
     DirectX::XMFLOAT3 accelSample;
 //  char printString[1000];
     float vectorLength = 0.0f;
+    float vectorLengthX = 0.0f;
+    float vectorLengthY = 0.0f;
+    float vectorLengthZ = 0.0f;
     float scalex = 0;
     float scaley = 0;
     float scalez = 0;
@@ -316,7 +329,9 @@ void SensorVisualizationScenario::UpdateModels(DX::StepTimer &timer)
         m_modelRenderers[i]->Update(timer);
     }
 
-    m_AccelRenderer->GetAccelSample(&accelSample);
+    //m_AccelRenderer->GetAccelSample(&accelSample);
+    //m_GyroRenderer->GetGyroSample(&accelSample);
+    m_MagRenderer->GetMagSample(&accelSample);
 
 //  sprintf(printString, "####Visualization Accel: % 3.4f % 3.4f % 3.4f %f\n",
 //      accelSample.x,
@@ -326,10 +341,13 @@ void SensorVisualizationScenario::UpdateModels(DX::StepTimer &timer)
 //  OutputDebugStringA(printString);
 
     vectorLength = sqrt(accelSample.x * accelSample.x + accelSample.y * accelSample.y + accelSample.z * accelSample.z);
+    vectorLengthX = 150.0f;
+    vectorLengthY = -150.0f;
+    vectorLengthZ = -150.0f;
 
-    scalex = accelSample.x / vectorLength;
-    scaley = accelSample.y / vectorLength;
-    scalez = accelSample.z / vectorLength;
+    //scalex = (accelSample.x-400.0f) / vectorLengthX;
+    scalex = (accelSample.y-300.0f) / vectorLengthY;
+    scalez = (accelSample.z+300.0f) / vectorLengthZ;
 
     xscaleTransform = DirectX::XMMatrixScaling(scalex, 1.0f, 1.0f);
     m_xaxisOriginRenderer->SetModelTransform(xscaleTransform);

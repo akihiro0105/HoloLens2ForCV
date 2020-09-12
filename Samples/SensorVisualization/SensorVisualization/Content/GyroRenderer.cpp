@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "MagRender.h"
+#include "GyroRenderer.h"
 #include "Common\DirectXHelper.h"
 #include <mutex>
 
@@ -8,7 +8,7 @@ using namespace DirectX;
 using namespace winrt::Windows::Foundation::Numerics;
 using namespace winrt::Windows::UI::Input::Spatial;
 
-void MagRender::MagUpdateLoop()
+void GyroRenderer::GyroUpdateLoop()
 {
     uint64_t lastSocTick = 0;
     uint64_t lastHupTick = 0;
@@ -18,7 +18,7 @@ void MagRender::MagUpdateLoop()
     // Cache the QueryPerformanceFrequency
     QueryPerformanceFrequency(&qpf);
 
-    winrt::check_hresult(m_pMagSensor->OpenStream());
+    winrt::check_hresult(m_pGyroSensor->OpenStream());
 
     while (!m_fExit)
     {
@@ -27,24 +27,24 @@ void MagRender::MagUpdateLoop()
         IResearchModeSensorFrame* pSensorFrame = nullptr;
         ResearchModeSensorTimestamp timeStamp;
         size_t BufferOutLength;
-        IResearchModeMagFrame* pSensorMagFrame = nullptr;
-        const MagDataStruct* pMagBuffer = nullptr;
-
-        
-
-        winrt::check_hresult(m_pMagSensor->GetNextBuffer(&pSensorFrame));
+        IResearchModeGyroFrame* pSensorGyroFrame = nullptr;
+        const GyroDataStruct* pGyroBuffer = nullptr;
 
 
-        winrt::check_hresult(pSensorFrame->QueryInterface(IID_PPV_ARGS(&pSensorMagFrame)));
+
+        winrt::check_hresult(m_pGyroSensor->GetNextBuffer(&pSensorFrame));
+
+
+        winrt::check_hresult(pSensorFrame->QueryInterface(IID_PPV_ARGS(&pSensorGyroFrame)));
 
         {
             std::lock_guard<std::mutex> guard(m_sampleMutex);
 
-            winrt::check_hresult(pSensorMagFrame->GetMagnetometer(&m_magSample));
+            winrt::check_hresult(pSensorGyroFrame->GetCalibratedGyro(&m_gyroSample));
         }
 
-        winrt::check_hresult(pSensorMagFrame->GetMagnetometerSamples(
-            &pMagBuffer,
+        winrt::check_hresult(pSensorGyroFrame->GetCalibratedGyroSamples(
+            &pGyroBuffer,
             &BufferOutLength));
 
         lastHupTick = 0;
@@ -55,18 +55,18 @@ void MagRender::MagUpdateLoop()
             pSensorFrame->GetTimeStamp(&timeStamp);
             if (lastHupTick != 0)
             {
-                if (pMagBuffer[i].VinylHupTicks < lastHupTick)
+                if (pGyroBuffer[i].VinylHupTicks < lastHupTick)
                 {
-                    sprintf(printString, "####MAG BAD HUP ORDERING\n");
+                    sprintf(printString, "####Gyro BAD HUP ORDERING\n");
                     OutputDebugStringA(printString);
                     DebugBreak();
                 }
-                sprintf(printString, " %I64d", (pMagBuffer[i].VinylHupTicks - lastHupTick) / 1000); // Microseconds
+                sprintf(printString, " %I64d", (pGyroBuffer[i].VinylHupTicks - lastHupTick) / 1000); // Microseconds
 
                 hupTimeDeltas = hupTimeDeltas + printString;
 
             }
-            lastHupTick = pMagBuffer[i].VinylHupTicks;
+            lastHupTick = pGyroBuffer[i].VinylHupTicks;
         }
 
         hupTimeDeltas = hupTimeDeltas + "\n";
@@ -90,10 +90,11 @@ void MagRender::MagUpdateLoop()
                 DebugBreak();
             }
 
-            sprintf(printString, "####Mag: % 3.4f % 3.4f % 3.4f %I64d %I64d\n",
-                m_magSample.x,
-                m_magSample.y,
-                m_magSample.z,
+            sprintf(printString, "####Gyro: % 3.4f % 3.4f % 3.4f %f %I64d %I64d\n",
+                m_gyroSample.x,
+                m_gyroSample.y,
+                m_gyroSample.z,
+                sqrt(m_gyroSample.x * m_gyroSample.x + m_gyroSample.y * m_gyroSample.y + m_gyroSample.z * m_gyroSample.z),
                 (((timeStamp.HostTicks - lastSocTick) * 1000) / timeStamp.HostTicksPerSecond), // Milliseconds
                 timeInMilliseconds);
             OutputDebugStringA(printString);
@@ -106,40 +107,40 @@ void MagRender::MagUpdateLoop()
             pSensorFrame->Release();
         }
 
-        if (pSensorMagFrame)
+        if (pSensorGyroFrame)
         {
-            pSensorMagFrame->Release();
+            pSensorGyroFrame->Release();
         }
     }
 
-    winrt::check_hresult(m_pMagSensor->CloseStream());
+    winrt::check_hresult(m_pGyroSensor->CloseStream());
 }
 
-void MagRender::GetMagSample(DirectX::XMFLOAT3* pMagSample)
+void GyroRenderer::GetGyroSample(DirectX::XMFLOAT3* pGyroSample)
 {
     std::lock_guard<std::mutex> guard(m_sampleMutex);
 
-    *pMagSample = m_magSample;
+    *pGyroSample = m_gyroSample;
 }
 
 // This function uses a SpatialPointerPose to position the world-locked hologram
 // two meters in front of the user's heading.
-void MagRender::PositionHologram(SpatialPointerPose const& pointerPose)
+void GyroRenderer::PositionHologram(SpatialPointerPose const& pointerPose)
 {
 }
 
 // Called once per frame. Rotates the cube, and calculates and sets the model matrix
 // relative to the position transform indicated by hologramPositionTransform.
-void MagRender::Update(DX::StepTimer const& timer)
+void GyroRenderer::Update(DX::StepTimer const& timer)
 {
 }
 
-void MagRender::SetSensorFrame(IResearchModeSensorFrame* pSensorFrame)
+void GyroRenderer::SetSensorFrame(IResearchModeSensorFrame* pSensorFrame)
 {
 
 }
 
-void MagRender::MagUpdateThread(MagRender* pMagRenderer, HANDLE hasData, ResearchModeSensorConsent* pCamAccessConsent)
+void GyroRenderer::GyroUpdateThread(GyroRenderer* pGyroRenderer, HANDLE hasData, ResearchModeSensorConsent* pCamAccessConsent)
 {
     HRESULT hr = S_OK;
 
@@ -187,10 +188,10 @@ void MagRender::MagUpdateThread(MagRender* pMagRenderer, HANDLE hasData, Researc
         return;
     }
 
-    pMagRenderer->MagUpdateLoop();
+    pGyroRenderer->GyroUpdateLoop();
 }
 
-void MagRender::UpdateSample()
+void GyroRenderer::UpdateSample()
 {
     HRESULT hr = S_OK;
 }
