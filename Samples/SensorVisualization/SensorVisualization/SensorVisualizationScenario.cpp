@@ -34,6 +34,11 @@ static HANDLE camConsentGiven;
 static ResearchModeSensorConsent imuAccessCheck;
 static HANDLE imuConsentGiven;
 
+static float magMaxY = 0.0f;
+static float magMinY = 0.0f;
+static float magMaxZ = 0.0f;
+static float magMinZ = 0.0f;
+
 SensorVisualizationScenario::SensorVisualizationScenario(std::shared_ptr<DX::DeviceResources> const& deviceResources) :
     Scenario(deviceResources)
 {
@@ -125,7 +130,7 @@ void SensorVisualizationScenario::IntializeSensors()
         }
 
 // Long throw and AHAT modes can not be used at the same time.
-//#define DEPTH_USE_LONG_THROW
+#define DEPTH_USE_LONG_THROW
 
 #ifdef DEPTH_USE_LONG_THROW
         if (sensorDescriptor.sensorType == DEPTH_LONG_THROW)
@@ -310,11 +315,8 @@ void SensorVisualizationScenario::UpdateModels(DX::StepTimer &timer)
 {
     HRESULT hr = S_OK;
     DirectX::XMFLOAT3 accelSample;
-//  char printString[1000];
+    char printString[1000];
     float vectorLength = 0.0f;
-    float vectorLengthX = 0.0f;
-    float vectorLengthY = 0.0f;
-    float vectorLengthZ = 0.0f;
     float scalex = 0;
     float scaley = 0;
     float scalez = 0;
@@ -329,9 +331,19 @@ void SensorVisualizationScenario::UpdateModels(DX::StepTimer &timer)
         m_modelRenderers[i]->Update(timer);
     }
 
-    //m_AccelRenderer->GetAccelSample(&accelSample);
-    //m_GyroRenderer->GetGyroSample(&accelSample);
+//#define ENABLE_ACCEL
+//#define ENABLE_GYRO
+#define ENABLE_MAG
+
+#ifdef ENABLE_ACCEL
+    m_AccelRenderer->GetAccelSample(&accelSample);
+#endif
+#ifdef ENABLE_GYRO
+    m_GyroRenderer->GetGyroSample(&accelSample);
+#endif
+#ifdef ENABLE_MAG
     m_MagRenderer->GetMagSample(&accelSample);
+#endif
 
 //  sprintf(printString, "####Visualization Accel: % 3.4f % 3.4f % 3.4f %f\n",
 //      accelSample.x,
@@ -340,14 +352,32 @@ void SensorVisualizationScenario::UpdateModels(DX::StepTimer &timer)
 //      sqrt(accelSample.x * accelSample.x + accelSample.y * accelSample.y + accelSample.z * accelSample.z));
 //  OutputDebugStringA(printString);
 
+    
+#ifdef ENABLE_MAG
+    if (magMaxY == magMinY) {
+        magMaxY = accelSample.y;
+        magMinY = accelSample.y-1.0f;
+    }
+    if (magMaxZ == magMinZ) {
+        magMaxZ = accelSample.z;
+        magMinZ = accelSample.z - 1.0f;
+    }
+    if (magMaxY < accelSample.y)magMaxY = accelSample.y;
+    if (magMinY > accelSample.y)magMinY = accelSample.y;
+    if (magMaxZ < accelSample.z)magMaxZ = accelSample.z;
+    if (magMinZ > accelSample.z)magMinZ = accelSample.z;
+    scalex = -((accelSample.y - magMaxY) / (magMaxY - magMinY)) - 0.1f;
+    scalex *= 4.0f;
+    scalez = -((accelSample.z - magMinZ) / (magMaxZ - magMinZ)) + 0.1f;
+    scalez *= 4.0f;
+    sprintf(printString, "####Mag: % 3.4f % 3.4f\n", scalex, scalez);
+    OutputDebugStringA(printString);
+#else
     vectorLength = sqrt(accelSample.x * accelSample.x + accelSample.y * accelSample.y + accelSample.z * accelSample.z);
-    vectorLengthX = 150.0f;
-    vectorLengthY = -150.0f;
-    vectorLengthZ = -150.0f;
-
-    //scalex = (accelSample.x-400.0f) / vectorLengthX;
-    scalex = (accelSample.y-300.0f) / vectorLengthY;
-    scalez = (accelSample.z+300.0f) / vectorLengthZ;
+    scalex = accelSample.x / vectorLength;
+    scaley = accelSample.y / vectorLength;
+    scalez = accelSample.z / vectorLength;
+#endif
 
     xscaleTransform = DirectX::XMMatrixScaling(scalex, 1.0f, 1.0f);
     m_xaxisOriginRenderer->SetModelTransform(xscaleTransform);

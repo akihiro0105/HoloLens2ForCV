@@ -96,7 +96,7 @@ void MagRender::MagUpdateLoop()
                 m_magSample.z,
                 (((timeStamp.HostTicks - lastSocTick) * 1000) / timeStamp.HostTicksPerSecond), // Milliseconds
                 timeInMilliseconds);
-            OutputDebugStringA(printString);
+            //OutputDebugStringA(printString);
         }
         lastSocTick = timeStamp.HostTicks;
         lastQpcNow = uqpcNow;

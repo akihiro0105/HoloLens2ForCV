@@ -97,7 +97,7 @@ void GyroRenderer::GyroUpdateLoop()
                 sqrt(m_gyroSample.x * m_gyroSample.x + m_gyroSample.y * m_gyroSample.y + m_gyroSample.z * m_gyroSample.z),
                 (((timeStamp.HostTicks - lastSocTick) * 1000) / timeStamp.HostTicksPerSecond), // Milliseconds
                 timeInMilliseconds);
-            OutputDebugStringA(printString);
+            //OutputDebugStringA(printString);
         }
         lastSocTick = timeStamp.HostTicks;
         lastQpcNow = uqpcNow;
